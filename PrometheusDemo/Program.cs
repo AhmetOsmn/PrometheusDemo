@@ -1,8 +1,5 @@
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using OpenTelemetry.Metrics;
 using Prometheus;
-using PrometheusDemo.CustomMetrics;
-using PrometheusDemo.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +10,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<ContosoMetrics>();
-
 builder.Services.AddOpenTelemetry()
     .WithMetrics(builder =>
     {
@@ -22,11 +17,11 @@ builder.Services.AddOpenTelemetry()
 
         builder.AddMeter("Microsoft.AspNetCore.Hosting",
                          "Microsoft.AspNetCore.Server.Kestrel");
+
         builder.AddView("http.server.request.duration",
             new ExplicitBucketHistogramConfiguration
             {
-                Boundaries = new double[] { 0, 0.005, 0.01, 0.025, 0.05,
-                       0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10 }
+                Boundaries = [0, 0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10]
             });
     });
 
@@ -47,13 +42,8 @@ app.MapControllers();
 
 app.UseHttpMetrics();
 
-app.MapGet("/", () => "Hello OpenTelemetry! ticks:" + DateTime.Now.Ticks.ToString()[^3..]);
-
-app.MapPost("/complete-sale", (SaleModel model, ContosoMetrics metrics) =>
-{
-    metrics.ProductSold(model.ProductName, model.QuantitySold);
-});
-
 app.MapPrometheusScrapingEndpoint();
+
+app.UseMetricServer();
 
 app.Run();
